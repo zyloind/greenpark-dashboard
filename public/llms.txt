@@ -1,0 +1,9 @@
+# Greenpark Group Dashboard
+
+> Dashboard analitik realtime untuk divisi Sales, Marketing, dan Teknik Greenpark Group.
+
+Aplikasi internal yang memerlukan login. Halaman publik terbatas pada landing utama.
+
+## Pages
+
+- [Dashboard](/): Halaman utama dashboard Greenpark Group.
