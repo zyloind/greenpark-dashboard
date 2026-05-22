@@ -2,7 +2,7 @@ import { MetricCard } from "@/components/MetricCard";
 import { ChartContainer } from "@/components/ChartContainer";
 import { EmptyDataBanner } from "@/components/EmptyDataBanner";
 import { useSpreadsheet } from "@/lib/spreadsheet";
-import { useSalesData, formatIDRCompact } from "@/lib/sales";
+import { useSalesData } from "@/lib/sales";
 import {
   ResponsiveContainer,
   ComposedChart,
@@ -16,39 +16,28 @@ import {
 } from "recharts";
 import { DollarSign, Users, BadgeCheck, TrendingDown } from "lucide-react";
 
-// --- FUNGSI FORMATTER (DATA SANITIZER SUPER AMAN) ---
-const formatChartNominal = (value: any) => {
-  // 1. Cek jika value adalah object atau undefined
-  if (value === null || value === undefined || typeof value === "object") return "Rp. 0";
+// --- FUNGSI FORMATTER (DATA SANITIZER - TYPE SAFE) ---
+const formatChartNominal = (value: any): string => {
+  const num = Number(value);
+  if (value === null || value === undefined || isNaN(num)) return "Rp. 0";
 
-  // 2. Paksa konversi ke angka
-  const num = typeof value === "string" ? parseFloat(value) : value;
-
-  // 3. Cek NaN
-  if (isNaN(num)) return "Rp. 0";
-
-  // 4. Logika format Miliar / Juta
   if (num >= 1000000000) return `Rp. ${Number((num / 1000000000).toFixed(1))} M`;
   if (num >= 1000000) return `Rp. ${Number((num / 1000000).toFixed(1))} Jt`;
-
-  // 5. Jika angka kecil (misal 9, 18) dianggap ribuan
   if (num > 0 && num < 1000) return `Rp. ${(num * 1000).toLocaleString("id-ID")}`;
 
-  // 6. Format standar
   return `Rp. ${num.toLocaleString("id-ID")}`;
 };
 
 export function MarketingDashboard() {
   const { isSalesConnected } = useSpreadsheet();
   const connected = isSalesConnected;
-  const { marketing, projects, funnel, loading } = useSalesData();
+  // Menambahkan tipe any untuk menghindari error dari lib/sales yang mungkin belum ter-typed
+  const { marketing, projects, funnel, loading } = useSalesData() as any;
   const live = connected && !loading;
 
-  // Sanitasi Data: Memastikan data projects selalu array
   const safeProjects = Array.isArray(projects) ? projects : [];
 
-  // Memastikan data chart selalu punya nilai numeric
-  const roiData = safeProjects.map((p) => ({
+  const roiData = safeProjects.map((p: any) => ({
     name: p?.name || "Unknown",
     spend: typeof p?.spent === "number" ? p.spent : 0,
     akad: typeof p?.revenue === "number" ? p.revenue : 0,
@@ -61,7 +50,9 @@ export function MarketingDashboard() {
   const totalSpent = marketing?.totalSpent || 0;
   const cpv = validLeads > 0 ? Math.round(totalSpent / validLeads) : 0;
 
-  const nonPerforming = safeProjects.filter((p) => (p?.spent || 0) > 0 && (p?.revenue || 0) === 0);
+  const nonPerforming = safeProjects.filter(
+    (p: any) => (p?.spent || 0) > 0 && (p?.revenue || 0) === 0,
+  );
 
   return (
     <div>
@@ -73,7 +64,6 @@ export function MarketingDashboard() {
         </p>
       </div>
 
-      {/* METRIC CARDS - SANITASI TOTAL */}
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         <MetricCard
           label="Total Ad Spend"
@@ -104,7 +94,6 @@ export function MarketingDashboard() {
         />
       </div>
 
-      {/* CHART ROI */}
       <div className="mt-6">
         <ChartContainer
           title="ROI & Efisiensi per Proyek"
@@ -130,7 +119,7 @@ export function MarketingDashboard() {
                 tickFormatter={formatChartNominal}
               />
               <Tooltip
-                formatter={(value) => formatChartNominal(value)}
+                formatter={(value: any) => formatChartNominal(value)}
                 contentStyle={{
                   background: "var(--color-popover)",
                   border: "1px solid var(--color-border)",
@@ -159,7 +148,6 @@ export function MarketingDashboard() {
         </ChartContainer>
       </div>
 
-      {/* NON PERFORMING LIST */}
       <div className="mt-6 rounded-xl border bg-card p-5">
         <h2 className="text-base font-semibold">Proyek Non-Performing</h2>
         {!connected ? (
@@ -170,7 +158,7 @@ export function MarketingDashboard() {
           </p>
         ) : (
           <ul className="mt-3 space-y-2 text-sm">
-            {nonPerforming.map((p) => (
+            {nonPerforming.map((p: any) => (
               <li
                 key={p.name}
                 className="flex flex-col sm:flex-row sm:items-center justify-between rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2"
